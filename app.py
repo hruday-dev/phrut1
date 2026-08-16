@@ -2,6 +2,27 @@ import os
 import json
 import random
 import smtplib
+
+# Load secrets from AWS
+def load_secrets():
+    client = boto3.client(
+        "secretsmanager",
+        region_name="ap-south-1"
+    )
+
+    response = client.get_secret_value(
+        SecretId="apascart/production"
+    )
+
+    secrets = json.loads(response["SecretString"])
+
+    for key, value in secrets.items():
+        os.environ[key] = str(value)
+
+load_secrets()
+
+
+
 import urllib.parse
 from threading import Thread
 from datetime import datetime, timedelta, timezone
@@ -17,8 +38,8 @@ from flask_cors import CORS
 # ----------------------------------------------------------------------
 app = Flask(__name__)
 
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'apascart-render-secret-key-prod-2026')
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'apascart-render-jwt-secret-prod-2026')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///ecommerce.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -30,14 +51,14 @@ PINCODES_CSV_PATH = 'serviceable_pincodes.csv'
 DEMAND_CSV_PATH = 'pincode_demand.csv'
 
 # Merchant UPI Setup
-MERCHANT_UPI_VPA = os.environ.get('MERCHANT_UPI_VPA', 'yourupiid@okaxis')
+MERCHANT_UPI_VPA = os.environ.get('MERCHANT_UPI_VPA')
 MERCHANT_NAME = os.environ.get('MERCHANT_NAME', 'Apascart')
 
 # SMTP Server Details (Load from Render Environment Variables)
 SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", 465))
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "your-email@gmail.com")
-SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD", "xxxx xxxx xxxx xxxx")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
+SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD")
 
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
